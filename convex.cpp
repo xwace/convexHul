@@ -176,6 +176,26 @@ void convexHull(vector<Point2f> &points) {
 //    }
 }
 
+//对结果进行重新排序:分上下两部分点集,上半部分从左到右存点,下半部分逆时针方向存进去
+void order_border(std::vector<Point2f *> &points) {
+    vector<Point2f *> convHullLines_top, convHullLines_bottom;
+    auto delim_start = points.front();
+    auto delim_end = points.back();
+
+    for (int i = 1; i < points.size() - 1; ++i) {
+        if (peak(delim_start, delim_end, points[i]) > 0) convHullLines_top.emplace_back(points[i]);
+        if (peak(delim_start, delim_end, points[i]) <= 0) convHullLines_bottom.emplace_back(points[i]);
+    }
+
+    auto it = convHullLines_bottom.rbegin();
+    while (it != convHullLines_bottom.rend()) {
+        convHullLines_top.emplace_back(*it);
+        it++;
+    }
+
+    swap(points, convHullLines_top);
+}
+
 int main(){
   auto pts = getTxt();
   sort(pts.begin(),pts.end(),cmp1);
