@@ -23,6 +23,7 @@ float peak(Point2f *p1, Point2f *p2, Point2f *p3) {
 }
 
 //算法1
+//浮点坐标三点共线,叉乘面积1e-9,但是不等于0. 需要用这个函数判断是否共线
 bool epsilon(Point2f* left,Point2f* right,Point2f*p){
     return p == left || p == right;
 }
