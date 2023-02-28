@@ -23,29 +23,32 @@ float peak(Point2f *p1, Point2f *p2, Point2f *p3) {
 }
 
 //算法1
+bool epsilon(Point2f* left,Point2f* right,Point2f*p){
+    return p == left || p == right;
+}
+
 void hull(vector<Point2f*> &Points, vector<Point2f *> &stack, int sign) {
 
     if (Points.size() <= 2) {
-        for (auto p: Points) {
+        for (auto& p: Points) {
             stack.emplace_back(p);
         }
         return;
     }
 
-    int pmaxy = 0;
-    int pminy = 0;
+    int pmaxy = -1;
+    int pminy = -1;
     auto left = Points.front();
     auto right = Points.back();
 
-    float maxArea, minArea = peak(left, right, left);
-    maxArea = minArea;
+    float maxArea{FLT_MIN}, minArea{FLT_MAX};
     for (int i = 0; i < Points.size(); ++i) {
         auto area = peak(left, right, Points[i]);
-        if (area > maxArea) {
+        if (area > maxArea && area >= 0) {
             pmaxy = i;
             maxArea = area;
         }
-        if (area < minArea) {
+        if (area < minArea && area <= 0) {
             pminy = i;
             minArea = area;
         }
@@ -54,17 +57,21 @@ void hull(vector<Point2f*> &Points, vector<Point2f *> &stack, int sign) {
     vector<Point2f *> points1,points2,points3,points4;
 
     for (int i = 0; i < Points.size(); ++i) {
-        auto area1 = peak(left, Points[pmaxy], Points[i]);
-        auto area2 = peak(Points[pmaxy], right, Points[i]);
+        if (pmaxy >= 0){
+            auto area1 = peak(left, Points[pmaxy], Points[i]);
+            auto area2 = peak(Points[pmaxy], right, Points[i]);
 
-        if (area1 >= 0) points1.emplace_back(Points[i]);
-        if (area2 >= 0) points2.emplace_back(Points[i]);
+            if (area1 > 0 || epsilon(left, Points[pmaxy], Points[i])) points1.emplace_back(Points[i]);
+            if (area2 > 0 || epsilon(Points[pmaxy], right, Points[i])) points2.emplace_back(Points[i]);
+        }
 
-        auto area3 = peak(left, Points[pminy], Points[i]);
-        auto area4 = peak(Points[pminy], right, Points[i]);
+        if (pminy >= 0){
+            auto area3 = peak(left, Points[pminy], Points[i]);
+            auto area4 = peak(Points[pminy], right, Points[i]);
 
-        if (area3 <= 0) points3.emplace_back(Points[i]);
-        if (area4 <= 0) points4.emplace_back(Points[i]);
+            if (area3 <0 || epsilon(left, Points[pminy], Points[i])) points3.emplace_back(Points[i]);
+            if (area4 <0 || epsilon(Points[pminy], right, Points[i])) points4.emplace_back(Points[i]);
+        }
     }
 
     //第一次需要递归左上 右上 左下 右下四个方向切出来的候选点
@@ -86,7 +93,6 @@ void hull(vector<Point2f*> &Points, vector<Point2f *> &stack, int sign) {
         hull(points4, stack, -1);
     }
 }
-
 
 //算法2--只给边界点,遍历所有点找到与边界构成三角面积最大的点,递归
 void hull(Point2f **arrays, int len, Point2f *left, Point2f *right, int *stack, int sign) {
@@ -182,9 +188,10 @@ void order_border(std::vector<Point2f *> &points) {
     auto delim_start = points.front();
     auto delim_end = points.back();
 
-    for (int i = 1; i < points.size() - 1; ++i) {
+    for (int i = 0; i < points.size(); ++i) {
+        if (i > 0 && points[i][0] == *delim_start) continue;//初始点只需要放进排列一次
         if (peak(delim_start, delim_end, points[i]) > 0) convHullLines_top.emplace_back(points[i]);
-        if (peak(delim_start, delim_end, points[i]) <= 0) convHullLines_bottom.emplace_back(points[i]);
+        if (peak(delim_start, delim_end, points[i]) < 0) convHullLines_bottom.emplace_back(points[i]);
     }
 
     auto it = convHullLines_bottom.rbegin();
@@ -194,6 +201,7 @@ void order_border(std::vector<Point2f *> &points) {
     }
 
     swap(points, convHullLines_top);
+    points.pop_back();
 }
 
 int main(){
@@ -209,4 +217,5 @@ int main(){
       points.emplace_back(&p);
   }
   hull(points, stack, 0);
+  order_border(stack);
 }
