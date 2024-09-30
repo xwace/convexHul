@@ -1,3 +1,10 @@
+/*
+ 算法核心：没有边相交(不自交)的简单多边形，维护两部分的凸边。点在凸多边形内部则过滤。
+ 1.维护back->first上半部分多边形的凸性
+ 2.维护first->back下半部分多边形的凸性
+*/
+
+
 //可视化
 void visualize(vector<Point2f> pts) {
     Mat src((int) pts.size(), 2, CV_32FC1, &pts[0]);
@@ -15,6 +22,13 @@ void visualize(vector<Point2f> pts) {
     namedWindow("dst0", 2);
     imshow("dst0", dst);
     waitKey();
+}
+
+//大于0左转，小于0右转
+float peak(Point2f* p1, Point2f* p2, Point2f* p3) {
+	auto area = p1->x * p2->y + p3->x * p1->y + p2->x * p3->y -
+		p3->x * p2->y - p2->x * p1->y - p1->x * p3->y;
+	return area;
 }
 
 //用双指针模拟双端队列实现
@@ -90,19 +104,22 @@ void melkman_d(vector<Point2f> &points) {
     }
 
     for (int i = 3; i < points.size(); i++) {
+        //1.凸多边形内部点过滤
         if (peak(D[0], D[1], &points[i]) > 0 and
             peak(*(D.end() - 2), D.back(), &points[i]) > 0) {
             continue;
         }
-
+        //维护back->first上半部分多边形的凸性
         while (peak(D[0], D[1], &points[i]) < 0) {
             D.pop_front();
         }
         D.emplace_front(&points[i]);
-
+        //维护first->下半部分多边形的凸性
         while (peak(*(D.end() - 2), D.back(), &points[i]) < 0) {
             D.pop_back();
         }
         D.emplace_back(&points[i]);
     }
+
+    //结果为back->first->c1->c2.....->back凸多边形
 }
